@@ -2,6 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import morgan from 'morgan'
 import userRoutes from "./routes/userRoutes.js"
+import inquiryRoutes from "./routes/inquiry.js"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import { errorHandler, notFound } from "./middlewares/errorMiddleware.js"
@@ -36,6 +37,8 @@ app.get("/api/health", (req, res) => {
 })
 
 app.use("/api/v1/users", userRoutes)
+app.use("/api/v1/inquiry", inquiryRoutes)
+
 app.use(notFound)
 app.use(errorHandler)
 

@@ -43,8 +43,8 @@ const inquirySchema = mongoose.Schema(
             type: String,
         },
     },
-{
-    timestamps:true
-});
+    {
+        timestamps: true
+    });
 
-module.exports=mongoose.model("Inquiry", inquirySchema);
+export default mongoose.model("Inquiry", inquirySchema);
