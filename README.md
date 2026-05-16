@@ -3,12 +3,12 @@
 1. Clone the repository to your local machine:
 
    ```bash
-   git clone https://github.com/harsh661/mern-auth.git
+   git clone https://github.com/workquerysol/Fitlife-Sutra.git
    ```
 2. Change into project directory
 
     ```bash
-    cd mern-auth
+    cd backend
     ```
 3. Install dependencies
 

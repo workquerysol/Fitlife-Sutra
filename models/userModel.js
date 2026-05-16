@@ -29,6 +29,30 @@ const userSchema = mongoose.Schema(
       minlength: 10,
       maxlength: 15,
     },
+    role:{
+      type:String,
+      required:true,
+      enum:['user, admin']
+    },
+    gender:{
+      type:String,
+      required:false,
+      enum:['Male','Female','Other']
+    },
+    age:{
+      type:Number,
+      required:false,
+    },
+    isActive:{
+      type:Boolean,
+      default:true,
+    },
+    isDeleted:{
+      type:Boolean,
+      default:false
+    },
+
+
     resetPasswordToken: {
       type: String,
       required: false,
