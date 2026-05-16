@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 
-const inquirySchema = mongoose.Schema({
+const attendanceSchema = mongoose.Schema({
     user_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
@@ -22,11 +22,11 @@ const inquirySchema = mongoose.Schema({
     },
     attandanceDate: {
         type: Date,
-        unique:true
+        required: true
     }
 }, {
     timestamps: true
-},)
+})
 
-attendanceSchema.index({ user_id: 1, attandanceDate: 1 })
-module.exports = mongoose.model("Attendance", attendanceSchema);
+attendanceSchema.index({ user_id: 1, attandanceDate: 1 }, { unique: true })
+export default mongoose.model("Attendance", attendanceSchema);

@@ -26,7 +26,6 @@ const membershipSchema = mongoose.Schema({
         default:0
     },
     status:{
-
         type:String,
         enum:["ACTIVE","EXPIRED","PAUSED"],
         default:"ACTIVE"
@@ -39,4 +38,4 @@ const membershipSchema = mongoose.Schema({
     }
     
 })
-module.exports=mongoose.model("Membership",membershipSchema);
+export default mongoose.model("Membership", membershipSchema);

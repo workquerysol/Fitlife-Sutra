@@ -22,4 +22,4 @@ const testimonialSchema = mongoose.Schema({
     timestamps: true
 })
 
-module.exports = mongoose.model("Testimonial", testimonialSchema)
+export default mongoose.model("Testimonial", testimonialSchema)

@@ -3,6 +3,8 @@ import dotenv from "dotenv"
 import morgan from 'morgan'
 import userRoutes from "./routes/userRoutes.js"
 import inquiryRoutes from "./routes/inquiry.js"
+import attendanceRoutes from "./routes/attendance.js"
+import blogRoutes from "./routes/blogs.js"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import { errorHandler, notFound } from "./middlewares/errorMiddleware.js"
@@ -38,6 +40,8 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/inquiry", inquiryRoutes)
+app.use("/api/v1/attendance", attendanceRoutes)
+app.use("/api/v1/blogs", blogRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

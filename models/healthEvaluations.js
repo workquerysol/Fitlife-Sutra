@@ -84,7 +84,7 @@ healthEvaluationSchema.index({
   evaluationDate: -1,
 });
 
-module.exports = mongoose.model(
+export default mongoose.model(
   "HealthEvaluation",
   healthEvaluationSchema
 );
