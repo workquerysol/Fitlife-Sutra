@@ -5,6 +5,8 @@ import userRoutes from "./routes/userRoutes.js"
 import inquiryRoutes from "./routes/inquiry.js"
 import attendanceRoutes from "./routes/attendance.js"
 import blogRoutes from "./routes/blogs.js"
+import healthEvaluationRoutes from "./routes/healthEvaluations.js"
+import testimonialRoutes from "./routes/testimonials.js"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import { errorHandler, notFound } from "./middlewares/errorMiddleware.js"
@@ -42,6 +44,8 @@ app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/inquiry", inquiryRoutes)
 app.use("/api/v1/attendance", attendanceRoutes)
 app.use("/api/v1/blogs", blogRoutes)
+app.use("/api/v1/healthEvaluations", healthEvaluationRoutes)
+app.use("/api/v1/testimonials", testimonialRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
