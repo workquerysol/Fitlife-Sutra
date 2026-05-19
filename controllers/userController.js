@@ -5,6 +5,8 @@ import generateToken from "../utils/generateToken.js"
 import { badRequest, conflict, notFound, unauthorized } from "../utils/apiError.js"
 import { sendSuccess } from "../utils/apiResponse.js"
 import sendPasswordResetEmail from "../utils/sendPasswordResetEmail.js"
+import Membership from "../models/membership.js"
+import Attendance from "../models/attendance.js"
 
 const buildUserPayload = (user) => ({
   _id: user._id,
@@ -47,6 +49,7 @@ const loginUser = asyncHandler(async (req, res) => {
 // route /api/users
 // @method post
 const registerUser = asyncHandler(async (req, res) => {
+  // #swagger.tags = ['Users']
   const name = req.body.name?.trim()
   const email = req.body.email?.trim().toLowerCase()
   const password = req.body.password
@@ -102,6 +105,37 @@ const getUserProfile = asyncHandler(async (req, res) => {
     message: "User profile fetched successfully",
     data: {
       user: buildUserPayload(req.user),
+    },
+  })
+})
+
+// @desc get user dashboard details
+// route /api/users/dashboard
+// @method get
+const getUserDashboard = asyncHandler(async (req, res) => {
+  const userId = req.user._id
+
+  const membership = await Membership.findOne({ user_id: userId }).sort({ createdAt: -1 })
+
+  const month = parseInt(req.query.month) || new Date().getMonth() + 1
+  const year = parseInt(req.query.year) || new Date().getFullYear()
+
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0, 23, 59, 59, 999)
+
+  const attendance = await Attendance.find({
+    user_id: userId,
+    attandanceDate: {
+      $gte: startDate,
+      $lte: endDate,
+    },
+  }).sort({ attandanceDate: 1 })
+
+  return sendSuccess(res, {
+    message: "User dashboard fetched successfully",
+    data: {
+      membership,
+      attendance,
     },
   })
 })
@@ -228,4 +262,5 @@ export {
   updateUserProfile,
   forgotPassword,
   resetPassword,
+  getUserDashboard,
 }

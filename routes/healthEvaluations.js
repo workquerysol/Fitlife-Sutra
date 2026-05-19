@@ -3,7 +3,7 @@ const router = express.Router()
 
 import { createHealthEvaluation, getHealthEvaluation } from "../controllers/healthEvaluation.js"
 
-router.post("/", createHealthEvaluation)
-router.get("/", getHealthEvaluation)
+router.post("/", /* #swagger.tags = ['Health Evaluations'] */ createHealthEvaluation)
+router.get("/", /* #swagger.tags = ['Health Evaluations'] */ getHealthEvaluation)
 
 export default router
