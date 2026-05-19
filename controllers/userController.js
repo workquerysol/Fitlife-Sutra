@@ -31,13 +31,14 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email })
 
   if (user && (await user.matchPassword(password))) {
-    generateToken(res, user._id)
+    const token = generateToken(res, user._id)
 
     return sendSuccess(res, {
       statusCode: 200,
       message: "User authenticated successfully",
       data: {
         user: buildUserPayload(user),
+        token,
       },
     })
   }
@@ -70,13 +71,14 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
   })
 
-  generateToken(res, user._id)
+  const token = generateToken(res, user._id)
 
   return sendSuccess(res, {
     statusCode: 201,
     message: "User registered successfully",
     data: {
       user: buildUserPayload(user),
+      token,
     },
   })
 })
