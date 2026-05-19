@@ -25,31 +25,30 @@ const userSchema = mongoose.Schema(
     },
     phone: {
       type: String,
-      required: false,
       minlength: 10,
       maxlength: 15,
     },
-    role:{
-      type:String,
-      required:true,
-      enum:['user, admin']
+    role: {
+      type: String,
+      enum: ['user, admin'],
+      default: 'user'
     },
-    gender:{
-      type:String,
-      required:false,
-      enum:['Male','Female','Other']
+    gender: {
+      type: String,
+      required: false,
+      enum: ['Male', 'Female', 'Other']
     },
-    age:{
-      type:Number,
-      required:false,
+    age: {
+      type: Number,
+      required: false,
     },
-    isActive:{
-      type:Boolean,
-      default:true,
+    isActive: {
+      type: Boolean,
+      default: true,
     },
-    isDeleted:{
-      type:Boolean,
-      default:false
+    isDeleted: {
+      type: Boolean,
+      default: false
     },
 
 
