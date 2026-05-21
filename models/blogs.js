@@ -33,6 +33,10 @@ const blogSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    tags: {
+        type: [String],
+        default: []
+    },
     publishedAt: {
         type: Date,
     }

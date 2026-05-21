@@ -29,13 +29,23 @@ const membershipSchema = mongoose.Schema({
         type:String,
         enum:["ACTIVE","EXPIRED","PAUSED"],
         default:"ACTIVE"
-        
     },
     paymentStatus:{
         type:String,
-        enum:["PAID","UNPAID"],
-        
+        enum:["PAID","UNPAID","PARTIALLY_PAID"],
+        default:"UNPAID"
+    },
+    totalAmount:{
+        type:Number,
+        default:0
+    },
+    amountPaid:{
+        type:Number,
+        default:0
+    },
+    dueAmount:{
+        type:Number,
+        default:0
     }
-    
 })
 export default mongoose.model("Membership", membershipSchema);

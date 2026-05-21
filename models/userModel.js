@@ -42,6 +42,11 @@ const userSchema = mongoose.Schema(
       type: Number,
       required: false,
     },
+    location: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
