@@ -291,3 +291,104 @@ export const registerMember = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal server error during registration" });
     }
 };
+
+// @desc    Update a health evaluation by ID
+// @route   PUT /api/v1/healthEvaluations/:id
+// @access  Admin
+export const updateHealthEvaluation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            height,
+            weight,
+            idealWeight,
+            bodyAge,
+            bodyFat,
+            musclePercentage,
+            visceralFat,
+            bmr,
+            bmi,
+            notes
+        } = req.body;
+
+        const evaluation = await HealthEvaluation.findById(id);
+        if (!evaluation) {
+            return res.status(404).json({ success: false, error: "Health evaluation not found" });
+        }
+
+        // Update fields if provided
+        if (height !== undefined) evaluation.height = height;
+        if (weight !== undefined) evaluation.weight = weight;
+        if (idealWeight !== undefined) evaluation.idealWeight = idealWeight;
+        if (bodyAge !== undefined) evaluation.bodyAge = bodyAge;
+        if (bodyFat !== undefined) evaluation.bodyFat = bodyFat;
+        if (musclePercentage !== undefined) evaluation.musclePercentage = musclePercentage;
+        if (visceralFat !== undefined) evaluation.visceralFat = visceralFat;
+        if (bmr !== undefined) evaluation.bmr = bmr;
+        if (notes !== undefined) evaluation.notes = notes;
+
+        // Recalculate BMI if weight or height changed
+        const activeWeight = weight !== undefined ? weight : evaluation.weight;
+        const activeHeight = height !== undefined ? height : evaluation.height;
+
+        if (bmi !== undefined) {
+            evaluation.bmi = bmi;
+        } else if (activeWeight && activeHeight) {
+            const { bmi: calcBmi, classification } = calculateBmiDetails(activeWeight, activeHeight);
+            evaluation.bmi = calcBmi;
+            evaluation.indicators.bmi = classification;
+        }
+
+        // Reclassify body fat
+        if (bodyFat !== undefined) {
+            if (bodyFat < 10) evaluation.indicators.bodyFat = "LOW";
+            else if (bodyFat > 25) evaluation.indicators.bodyFat = "HIGH";
+            else evaluation.indicators.bodyFat = "NORMAL";
+        }
+
+        // Reclassify muscle
+        if (musclePercentage !== undefined) {
+            if (musclePercentage < 30) evaluation.indicators.muscle = "LOW";
+            else if (musclePercentage > 50) evaluation.indicators.muscle = "HIGH";
+            else evaluation.indicators.muscle = "NORMAL";
+        }
+
+        await evaluation.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Health evaluation updated successfully",
+            data: evaluation
+        });
+    }
+    catch (error) {
+        console.error("Error updating health evaluation:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// @desc    Delete a health evaluation by ID
+// @route   DELETE /api/v1/healthEvaluations/:id
+// @access  Admin
+export const deleteHealthEvaluation = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const evaluation = await HealthEvaluation.findById(id);
+        if (!evaluation) {
+            return res.status(404).json({ success: false, error: "Health evaluation not found" });
+        }
+
+        await HealthEvaluation.findByIdAndDelete(id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Health evaluation deleted successfully",
+            data: null
+        });
+    }
+    catch (error) {
+        console.error("Error deleting health evaluation:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};

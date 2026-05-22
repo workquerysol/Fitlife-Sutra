@@ -7,6 +7,7 @@ import { sendSuccess } from "../utils/apiResponse.js"
 import sendPasswordResetEmail from "../utils/sendPasswordResetEmail.js"
 import Membership from "../models/membership.js"
 import Attendance from "../models/attendance.js"
+import HealthEvaluation from "../models/healthEvaluations.js"
 
 const buildUserPayload = (user) => ({
   _id: user._id,
@@ -256,6 +257,171 @@ const resetPassword = asyncHandler(async (req, res) => {
   })
 })
 
+// @desc    Get all members with pagination, search, and filters (Admin)
+// @route   GET /api/v1/users/members
+// @access  Admin
+const getAllMembers = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1
+  const limit = parseInt(req.query.limit) || 20
+  const skip = (page - 1) * limit
+
+  const search = req.query.search?.trim()
+  const planType = req.query.planType
+  const status = req.query.status // ACTIVE, EXPIRED, PAUSED
+  const sortBy = req.query.sortBy || "createdAt"
+  const sortOrder = req.query.sortOrder === "asc" ? 1 : -1
+
+  // Build user query
+  let userQuery = { role: "user", isDeleted: { $ne: true } }
+
+  if (search) {
+    const searchRegex = new RegExp(search, "i")
+    userQuery.$or = [
+      { name: searchRegex },
+      { email: searchRegex },
+      { phone: searchRegex },
+    ]
+  }
+
+  // Get total count for pagination
+  const totalMembers = await User.countDocuments(userQuery)
+
+  // Get paginated users
+  const users = await User.find(userQuery)
+    .select("-password -resetPasswordToken -resetPasswordExpires")
+    .sort({ [sortBy]: sortOrder })
+    .skip(skip)
+    .limit(limit)
+    .lean()
+
+  // Get latest membership for each user in one query
+  const userIds = users.map(u => u._id)
+  const memberships = await Membership.aggregate([
+    { $match: { user_id: { $in: userIds } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: "$user_id",
+        latestMembership: { $first: "$$ROOT" }
+      }
+    }
+  ])
+
+  // Build a membership lookup map
+  const membershipMap = {}
+  memberships.forEach(m => {
+    membershipMap[m._id.toString()] = m.latestMembership
+  })
+
+  // Merge user data with membership data
+  const members = users.map(user => {
+    const membership = membershipMap[user._id.toString()]
+    return {
+      ...user,
+      membership: membership
+        ? {
+            _id: membership._id,
+            planType: membership.planType,
+            status: membership.status,
+            startDate: membership.startDate,
+            endDate: membership.endDate,
+            paymentStatus: membership.paymentStatus,
+          }
+        : null,
+    }
+  })
+
+  // Apply post-query filters (on membership fields)
+  let filteredMembers = members
+  if (planType) {
+    filteredMembers = filteredMembers.filter(
+      m => m.membership?.planType?.toLowerCase() === planType.toLowerCase()
+    )
+  }
+  if (status) {
+    filteredMembers = filteredMembers.filter(
+      m => m.membership?.status === status
+    )
+  }
+
+  const totalPages = Math.ceil(totalMembers / limit)
+
+  return sendSuccess(res, {
+    message: "Members fetched successfully",
+    data: {
+      members: filteredMembers,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalMembers,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    },
+  })
+})
+
+// @desc    Get a single member's full admin profile
+// @route   GET /api/v1/users/members/:id
+// @access  Admin
+const getMemberProfile = asyncHandler(async (req, res) => {
+  const { id } = req.params
+
+  const user = await User.findById(id)
+    .select("-password -resetPasswordToken -resetPasswordExpires")
+    .lean()
+
+  if (!user) {
+    throw notFound("Member not found")
+  }
+
+  // Get active membership (or latest)
+  const membership = await Membership.findOne({ user_id: id })
+    .sort({ createdAt: -1 })
+    .lean()
+
+  // Compute cycle info
+  let cycleInfo = null
+  if (membership) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const cycleStart = new Date(membership.startDate)
+    const cycleEnd = new Date(membership.endDate)
+    const totalDays = membership.durationDays + (membership.rolloverDays || 0)
+
+    const elapsedMs = today.getTime() - cycleStart.getTime()
+    const dayInCycle = Math.min(totalDays, Math.max(1, Math.ceil(elapsedMs / (1000 * 60 * 60 * 24)) + 1))
+
+    const remainingMs = cycleEnd.getTime() - today.getTime()
+    const daysLeft = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)))
+
+    cycleInfo = {
+      totalDays,
+      dayInCycle,
+      daysLeft,
+      rolloverDays: membership.rolloverDays || 0,
+      sessionsCompleted: membership.attendanceUsed || 0,
+    }
+  }
+
+  // Get latest health evaluation
+  const latestEvaluation = await HealthEvaluation.findOne({ userId: id })
+    .sort({ evaluationDate: -1 })
+    .lean()
+
+  return sendSuccess(res, {
+    message: "Member profile fetched successfully",
+    data: {
+      user,
+      membership,
+      cycleInfo,
+      latestEvaluation,
+    },
+  })
+})
+
 export {
   loginUser,
   registerUser,
@@ -265,4 +431,6 @@ export {
   forgotPassword,
   resetPassword,
   getUserDashboard,
+  getAllMembers,
+  getMemberProfile,
 }

@@ -8,6 +8,8 @@ import {
   forgotPassword,
   resetPassword,
   getUserDashboard,
+  getAllMembers,
+  getMemberProfile,
 } from "../controllers/userController.js"
 import { protect } from "../middlewares/authMiddleware.js"
 
@@ -24,5 +26,9 @@ router
   .put(protect, /* #swagger.tags = ['Users'] */ updateUserProfile)
 
 router.get("/dashboard", protect, /* #swagger.tags = ['Users'] */ getUserDashboard)
+
+// Admin - Member Management
+router.get("/members", protect, /* #swagger.tags = ['Members'] */ getAllMembers)
+router.get("/members/:id", protect, /* #swagger.tags = ['Members'] */ getMemberProfile)
 
 export default router
