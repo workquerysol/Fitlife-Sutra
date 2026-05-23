@@ -6,12 +6,13 @@ import {
   getUserProfile,
   updateUserProfile,
   forgotPassword,
+  verifyOtp,
   resetPassword,
   getUserDashboard,
   getAllMembers,
   getMemberProfile,
 } from "../controllers/userController.js"
-import { protect } from "../middlewares/authMiddleware.js"
+import { protect, adminOnly } from "../middlewares/authMiddleware.js"
 
 const router = express.Router()
 
@@ -19,6 +20,7 @@ router.post("/register", /* #swagger.tags = ['Users'] */ registerUser)
 router.post("/login", /* #swagger.tags = ['Users'] */ loginUser)
 router.post("/logout", /* #swagger.tags = ['Users'] */ logoutUser)
 router.post("/forgot-password", /* #swagger.tags = ['Users'] */ forgotPassword)
+router.post("/verify-otp", /* #swagger.tags = ['Users'] */ verifyOtp)
 router.post("/reset-password/:token", /* #swagger.tags = ['Users'] */ resetPassword)
 router
   .route("/profile")
@@ -28,7 +30,7 @@ router
 router.get("/dashboard", protect, /* #swagger.tags = ['Users'] */ getUserDashboard)
 
 // Admin - Member Management
-router.get("/members", protect, /* #swagger.tags = ['Members'] */ getAllMembers)
-router.get("/members/:id", protect, /* #swagger.tags = ['Members'] */ getMemberProfile)
+router.get("/members", protect, adminOnly, /* #swagger.tags = ['Members'] */ getAllMembers)
+router.get("/members/:id", protect, adminOnly, /* #swagger.tags = ['Members'] */ getMemberProfile)
 
 export default router

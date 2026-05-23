@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 import asyncHandler from "express-async-handler"
 import User from "../models/userModel.js"
-import { unauthorized } from "../utils/apiError.js"
+import { unauthorized, forbidden } from "../utils/apiError.js"
 
 const protect = asyncHandler(async (req, res, next) => {
   let token = req.cookies.jwt
@@ -29,4 +29,12 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 })
 
-export { protect }
+const adminOnly = asyncHandler(async (req, res, next) => {
+  if (req.user?.role === "admin") {
+    next()
+  } else {
+    throw forbidden("Admin access required")
+  }
+})
+
+export { protect, adminOnly }

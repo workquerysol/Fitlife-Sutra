@@ -5,6 +5,7 @@ import generateToken from "../utils/generateToken.js"
 import { badRequest, conflict, notFound, unauthorized } from "../utils/apiError.js"
 import { sendSuccess } from "../utils/apiResponse.js"
 import sendPasswordResetEmail from "../utils/sendPasswordResetEmail.js"
+import sendOtpEmail from "../utils/sendOtpEmail.js"
 import Membership from "../models/membership.js"
 import Attendance from "../models/attendance.js"
 import HealthEvaluation from "../models/healthEvaluations.js"
@@ -182,7 +183,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   })
 })
 
-// @desc request password reset email
+// @desc request password reset OTP via email
 // route /api/users/forgot-password
 // @method post
 const forgotPassword = asyncHandler(async (req, res) => {
@@ -195,21 +196,24 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email })
 
   if (user) {
-    const resetToken = crypto.randomBytes(32).toString("hex")
+    // Rate-limit: block if a valid OTP was issued in the last 60 seconds
+    const ONE_MIN = 60 * 1000
+    if (
+      user.resetPasswordExpires &&
+      user.resetPasswordExpires > Date.now() + 14 * 60 * 1000
+    ) {
+      throw badRequest("Please wait a moment before requesting another OTP")
+    }
 
-    user.resetPasswordToken = hashResetToken(resetToken)
+    // Generate 6-digit numeric OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+
+    user.resetPasswordToken = hashResetToken(otp)
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000
     await user.save({ validateBeforeSave: false })
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173"
-    const resetUrl = `${clientUrl}/reset-password/${resetToken}`
-
     try {
-      await sendPasswordResetEmail({
-        email: user.email,
-        name: user.name,
-        resetUrl,
-      })
+      await sendOtpEmail({ email: user.email, name: user.name, otp })
     } catch (error) {
       user.resetPasswordToken = undefined
       user.resetPasswordExpires = undefined
@@ -218,8 +222,46 @@ const forgotPassword = asyncHandler(async (req, res) => {
     }
   }
 
+  // Generic response to avoid email enumeration
   return sendSuccess(res, {
-    message: "If an account exists for that email, a password reset link has been sent",
+    message: "If an account exists for that email, an OTP has been sent",
+  })
+})
+
+// @desc verify OTP and return a short-lived reset token
+// route /api/users/verify-otp
+// @method post
+const verifyOtp = asyncHandler(async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase()
+  const otp = String(req.body.otp || "").trim()
+
+  if (!email || !otp) {
+    throw badRequest("Email and OTP are required")
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw badRequest("OTP must be a 6-digit number")
+  }
+
+  const user = await User.findOne({
+    email,
+    resetPasswordToken: hashResetToken(otp),
+    resetPasswordExpires: { $gt: Date.now() },
+  })
+
+  if (!user) {
+    throw badRequest("Invalid or expired OTP")
+  }
+
+  // OTP is correct — issue a new secure reset token (15-min window)
+  const resetToken = crypto.randomBytes(32).toString("hex")
+  user.resetPasswordToken = hashResetToken(resetToken)
+  user.resetPasswordExpires = Date.now() + 15 * 60 * 1000
+  await user.save({ validateBeforeSave: false })
+
+  return sendSuccess(res, {
+    message: "OTP verified successfully",
+    data: { resetToken },
   })
 })
 
@@ -429,6 +471,7 @@ export {
   getUserProfile,
   updateUserProfile,
   forgotPassword,
+  verifyOtp,
   resetPassword,
   getUserDashboard,
   getAllMembers,

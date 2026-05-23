@@ -43,13 +43,13 @@ export const createHealthEvaluation = async (req, res) => {
         } = req.body;
 
         if (!userId || !weight || !height) {
-            return res.status(400).json({ success: false, error: "userId, weight, and height are required" });
+            return res.status(400).json({ success: false, statusCode: 400, error: "userId, weight, and height are required" });
         }
 
         // Validate user existence
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ success: false, error: "User not found" });
+            return res.status(404).json({ success: false, statusCode: 404, error: "User not found" });
         }
 
         // Optionally update user name or phone if provided and changed
@@ -105,15 +105,15 @@ export const createHealthEvaluation = async (req, res) => {
             notes
         });
 
-        return res.status(201).json({ 
-            success: true, 
-            message: "Health evaluation created successfully", 
-            data: evaluation 
+        return res.status(201).json({
+            success: true, statusCode: 201,
+            message: "Health evaluation created successfully",
+            data: evaluation
         });
     }
     catch (error) {
         console.error("Error while creating the health evaluation:", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, statusCode: 500, message: "Internal server error" });
     }
 };
 
@@ -129,7 +129,7 @@ export const getHealthEvaluation = async (req, res) => {
         const date = req.query.date || req.body.date;
 
         if (!userId) {
-            return res.status(400).json({ success: false, error: "User ID is required" });
+            return res.status(400).json({ success: false, statusCode: 400, error: "User ID is required" });
         }
 
         let query = { userId };
@@ -142,15 +142,15 @@ export const getHealthEvaluation = async (req, res) => {
 
         const evaluations = await HealthEvaluation.find(query).sort({ evaluationDate: -1 });
 
-        return res.status(200).json({ 
-            success: true, 
-            message: "Health evaluations fetched successfully", 
-            data: evaluations 
+        return res.status(200).json({
+            success: true, statusCode: 200,
+            message: "Health evaluations fetched successfully",
+            data: evaluations
         });
     }
     catch (error) {
         console.error("Error while fetching health evaluations:", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, statusCode: 500, message: "Internal server error" });
     }
 };
 
@@ -177,7 +177,7 @@ export const registerMember = async (req, res) => {
         } = req.body;
 
         if (!name || !phone || !planType) {
-            return res.status(400).json({ success: false, error: "Name, phone number, and membership plan are required." });
+            return res.status(400).json({ success: false, statusCode: 400, error: "Name, phone number, and membership plan are required." });
         }
 
         // Generate email if not provided
@@ -191,7 +191,7 @@ export const registerMember = async (req, res) => {
         // Check user existence
         const userExists = await User.findOne({ email: memberEmail });
         if (userExists) {
-            return res.status(409).json({ success: false, error: `A member with email ${memberEmail} already exists.` });
+            return res.status(409).json({ success: false, statusCode: 409, error: `A member with email ${memberEmail} already exists.` });
         }
 
         // Create new User
@@ -269,7 +269,7 @@ export const registerMember = async (req, res) => {
         }
 
         return res.status(201).json({
-            success: true,
+            success: true, statusCode: 201,
             message: "Member registered and initialized successfully",
             data: {
                 user: {
@@ -288,7 +288,7 @@ export const registerMember = async (req, res) => {
     }
     catch (error) {
         console.error("Error during member registration:", error);
-        return res.status(500).json({ success: false, message: "Internal server error during registration" });
+        return res.status(500).json({ success: false, statusCode: 500, message: "Internal server error during registration" });
     }
 };
 
@@ -313,7 +313,7 @@ export const updateHealthEvaluation = async (req, res) => {
 
         const evaluation = await HealthEvaluation.findById(id);
         if (!evaluation) {
-            return res.status(404).json({ success: false, error: "Health evaluation not found" });
+            return res.status(404).json({ success: false, statusCode: 404, error: "Health evaluation not found" });
         }
 
         // Update fields if provided
@@ -356,14 +356,14 @@ export const updateHealthEvaluation = async (req, res) => {
         await evaluation.save();
 
         return res.status(200).json({
-            success: true,
+            success: true, statusCode: 200,
             message: "Health evaluation updated successfully",
             data: evaluation
         });
     }
     catch (error) {
         console.error("Error updating health evaluation:", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, statusCode: 500, message: "Internal server error" });
     }
 };
 
@@ -376,19 +376,19 @@ export const deleteHealthEvaluation = async (req, res) => {
 
         const evaluation = await HealthEvaluation.findById(id);
         if (!evaluation) {
-            return res.status(404).json({ success: false, error: "Health evaluation not found" });
+            return res.status(404).json({ success: false, statusCode: 404, error: "Health evaluation not found" });
         }
 
         await HealthEvaluation.findByIdAndDelete(id);
 
         return res.status(200).json({
-            success: true,
+            success: true, statusCode: 200,
             message: "Health evaluation deleted successfully",
             data: null
         });
     }
     catch (error) {
         console.error("Error deleting health evaluation:", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, statusCode: 500, message: "Internal server error" });
     }
 };
