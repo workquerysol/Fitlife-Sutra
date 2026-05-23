@@ -1,6 +1,5 @@
 import Blog from "../models/blogs.js"
 import { v2 as cloudinary } from "cloudinary"
-import fs from "fs"
 
 export const createBlog = async (req, res) => {
     try {
@@ -191,24 +190,19 @@ export const uploadImage = async (req, res) => {
             return res.status(400).json({ success: false, error: "No file uploaded" })
         }
 
-        // Upload local temp file to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: "blogs"
+        const result = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: "blogs" },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            );
+            stream.end(req.file.buffer);
         });
 
-        // Delete the temporary file from local disk asynchronously
-        fs.unlink(req.file.path, (err) => {
-            if (err) console.error("Error deleting temp file:", err);
-        });
-        
         return res.status(200).json({ success: true, url: result.secure_url });
     } catch (error) {
-        // Clean up temp file on error
-        if (req.file && req.file.path) {
-            fs.unlink(req.file.path, (err) => {
-                if (err) console.error("Error deleting temp file after error:", err);
-            });
-        }
         return res.status(500).json({ success: false, error: error.message });
     }
 }

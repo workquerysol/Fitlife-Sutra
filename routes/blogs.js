@@ -2,7 +2,7 @@ import express from "express"
 import multer from "multer"
 const router = express.Router()
 
-const upload = multer({ dest: "uploads/" })
+const upload = multer({ storage: multer.memoryStorage() })
 
 import { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog, uploadImage } from "../controllers/blogs.js"
 
