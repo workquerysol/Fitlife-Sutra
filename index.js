@@ -14,10 +14,18 @@ import { errorHandler, notFound } from "./middlewares/errorMiddleware.js"
 import swaggerUi from "swagger-ui-express"
 import fs from "fs"
 
+import { v2 as cloudinary } from "cloudinary"
+
 const swaggerFile = JSON.parse(fs.readFileSync('./swagger-output.json', 'utf-8'))
 
 dotenv.config()
 const PORT = process.env.PORT || 3000
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+})
 
 import connectDB from "./config/db.js"
 
@@ -33,8 +41,8 @@ app.use(
   })
 )
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 app.use(cookieParser())
 

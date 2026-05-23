@@ -1,9 +1,13 @@
 import express from "express"
+import multer from "multer"
 const router = express.Router()
 
-import { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog } from "../controllers/blogs.js"
+const upload = multer({ dest: "uploads/" })
+
+import { createBlog, getBlogs, getBlogById, updateBlog, deleteBlog, uploadImage } from "../controllers/blogs.js"
 
 router.post("/", /* #swagger.tags = ['Blogs'] */ createBlog)
+router.post("/upload", upload.single("image"), uploadImage)
 router.get("/", /* #swagger.tags = ['Blogs'] */ getBlogs)
 router.get("/:id", /* #swagger.tags = ['Blogs'] */ getBlogById)
 router.put("/:id", /* #swagger.tags = ['Blogs'] */ updateBlog)
