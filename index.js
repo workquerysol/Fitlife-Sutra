@@ -36,7 +36,7 @@ const app = express()
 app.use(morgan('common'))
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://fitlifesutra.netlify.app"],
+    origin: ["http://localhost:5173", "https://fitlifesutra.netlify.app", "http://courageous-pika-a9ee96.netlify.app"],
     credentials: true,
   })
 )
