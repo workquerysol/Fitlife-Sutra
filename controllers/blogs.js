@@ -135,6 +135,32 @@ export const deleteBlog = async (req, res) => {
     }
 }
 
+export const getBlogStats = async (req, res) => {
+    try {
+        const [totalPosts, publishedPosts, draftPosts, viewsAgg] = await Promise.all([
+            Blog.countDocuments(),
+            Blog.countDocuments({ status: 'PUBLISHED' }),
+            Blog.countDocuments({ status: 'DRAFT' }),
+            Blog.aggregate([
+                { $match: { status: 'PUBLISHED' } },
+                { $group: { _id: null, totalViews: { $sum: '$views' }, avgViews: { $avg: '$views' } } }
+            ])
+        ])
+        return res.status(200).json({
+            success: true, statusCode: 200,
+            data: {
+                totalPosts,
+                publishedPosts,
+                draftPosts,
+                totalViews: viewsAgg[0]?.totalViews || 0,
+                avgViews: Math.round(viewsAgg[0]?.avgViews || 0)
+            }
+        })
+    } catch (error) {
+        return res.status(500).json({ success: false, statusCode: 500, error: error.message })
+    }
+}
+
 export const uploadImage = async (req, res) => {
     try {
         if (!req.file) {

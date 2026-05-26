@@ -1,6 +1,52 @@
 import Membership from '../models/membership.js'
 import Attendance from '../models/attendance.js'
 
+// @desc    Get daily attendance counts for the activity map
+// @route   GET /api/v1/attendance/activity-map?days=30
+// @access  Admin
+export const getActivityMap = async (req, res) => {
+    const days = Math.min(parseInt(req.query.days) || 30, 90)
+    const endDate = new Date()
+    endDate.setHours(23, 59, 59, 999)
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days + 1)
+    startDate.setHours(0, 0, 0, 0)
+
+    try {
+        const records = await Attendance.aggregate([
+            {
+                $match: {
+                    attandanceDate: { $gte: startDate, $lte: endDate },
+                    status: 'PRESENT'
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$attandanceDate' } },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ])
+
+        const countMap = {}
+        records.forEach(r => { countMap[r._id] = r.count })
+
+        const result = []
+        for (let i = 0; i < days; i++) {
+            const d = new Date(startDate)
+            d.setDate(d.getDate() + i)
+            const dateKey = d.toISOString().split('T')[0]
+            result.push({ date: dateKey, count: countMap[dateKey] || 0 })
+        }
+
+        return res.status(200).json({ success: true, statusCode: 200, message: 'Activity map retrieved successfully', data: result })
+    } catch (error) {
+        console.error('Error fetching activity map:', error)
+        return res.status(500).json({ success: false, statusCode: 500, message: 'Error fetching activity map', data: null })
+    }
+}
+
 // @desc    Add attendance for a member
 // @route   POST /api/v1/attendance
 // @access  Admin
@@ -90,10 +136,10 @@ export const toggleAttendance = async (req, res) => {
         }
 
         const targetDate = new Date(date)
-        targetDate.setHours(0, 0, 0, 0)
+        targetDate.setUTCHours(0, 0, 0, 0)
 
         const endOfDay = new Date(targetDate)
-        endOfDay.setHours(23, 59, 59, 999)
+        endOfDay.setUTCHours(23, 59, 59, 999)
 
         const existing = await Attendance.findOne({
             user_id: membership.user_id,
@@ -150,11 +196,14 @@ export const getMyAttendanceCycle = async (req, res) => {
         const cycleStart = new Date(startDate)
         const cycleEnd = new Date(endDate)
         const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        today.setUTCHours(0, 0, 0, 0)
+
+        const cycleEndInclusive = new Date(cycleEnd)
+        cycleEndInclusive.setUTCHours(23, 59, 59, 999)
 
         const records = await Attendance.find({
             memberShipId: memberId,
-            attandanceDate: { $gte: cycleStart, $lte: cycleEnd }
+            attandanceDate: { $gte: cycleStart, $lte: cycleEndInclusive }
         }).sort({ attandanceDate: 1 })
 
         const attendanceMap = {}
@@ -166,9 +215,7 @@ export const getMyAttendanceCycle = async (req, res) => {
         const totalDays = durationDays + (rolloverDays || 0)
         const grid = []
         for (let i = 0; i < totalDays; i++) {
-            const dayDate = new Date(cycleStart)
-            dayDate.setDate(dayDate.getDate() + i)
-            dayDate.setHours(0, 0, 0, 0)
+            const dayDate = new Date(cycleStart.getTime() + i * 24 * 60 * 60 * 1000)
             const dateKey = dayDate.toISOString().split('T')[0]
             let status
             if (dayDate > today) {
@@ -221,11 +268,15 @@ export const getAttendanceByCycle = async (req, res) => {
         const cycleStart = new Date(startDate)
         const cycleEnd = new Date(endDate)
         const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        today.setUTCHours(0, 0, 0, 0)
+
+        // Extend query end to cover the full last day (cycleEnd may be midnight UTC)
+        const cycleEndInclusive = new Date(cycleEnd)
+        cycleEndInclusive.setUTCHours(23, 59, 59, 999)
 
         const records = await Attendance.find({
             memberShipId: memberId,
-            attandanceDate: { $gte: cycleStart, $lte: cycleEnd }
+            attandanceDate: { $gte: cycleStart, $lte: cycleEndInclusive }
         }).sort({ attandanceDate: 1 })
 
         const attendanceMap = {}
@@ -237,10 +288,7 @@ export const getAttendanceByCycle = async (req, res) => {
         const totalDays = durationDays + (rolloverDays || 0)
         const grid = []
         for (let i = 0; i < totalDays; i++) {
-            const dayDate = new Date(cycleStart)
-            dayDate.setDate(dayDate.getDate() + i)
-            dayDate.setHours(0, 0, 0, 0)
-
+            const dayDate = new Date(cycleStart.getTime() + i * 24 * 60 * 60 * 1000)
             const dateKey = dayDate.toISOString().split('T')[0]
             let status
 

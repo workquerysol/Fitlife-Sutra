@@ -363,13 +363,13 @@ const getAllMembers = asyncHandler(async (req, res) => {
       ...user,
       membership: membership
         ? {
-            _id: membership._id,
-            planType: membership.planType,
-            status: membership.status,
-            startDate: membership.startDate,
-            endDate: membership.endDate,
-            paymentStatus: membership.paymentStatus,
-          }
+          _id: membership._id,
+          planType: membership.planType,
+          status: membership.status,
+          startDate: membership.startDate,
+          endDate: membership.endDate,
+          paymentStatus: membership.paymentStatus,
+        }
         : null,
     }
   })

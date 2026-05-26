@@ -19,27 +19,101 @@ const calculateBmiDetails = (weight, height) => {
     return { bmi, classification };
 };
 
+// @desc    Assign a plan + initial health markers to a self-registered user (no new User created)
+// @route   POST /api/v1/healthEvaluations/setup-plan
+// @access  Admin
+export const setupMemberPlan = async (req, res) => {
+    try {
+        const { userId, planType, startDate, totalAmount, amountPaid, height, weight, idealWeight, notes } = req.body
+
+        if (!userId || !planType) {
+            return res.status(400).json({ success: false, statusCode: 400, message: "userId and planType are required" })
+        }
+
+        const user = await User.findById(userId)
+        if (!user) {
+            return res.status(404).json({ success: false, statusCode: 404, message: "User not found" })
+        }
+
+        // Determine plan duration from plan name
+        let durationDays = 30
+        const planLower = planType.toLowerCase()
+        if (planLower.includes('5-day') || planLower.includes('5 day')) durationDays = 5
+        else if (planLower.includes('15-day') || planLower.includes('15 day')) durationDays = 15
+        else if (planLower.includes('25-day') || planLower.includes('25 day')) durationDays = 25
+
+        const parsedTotal = Number(totalAmount) || 0
+        const parsedPaid = Number(amountPaid) || 0
+        const dueAmount = Math.max(0, parsedTotal - parsedPaid)
+
+        let paymentStatus = 'UNPAID'
+        if (dueAmount === 0 && parsedTotal > 0) paymentStatus = 'PAID'
+        else if (parsedPaid > 0 && dueAmount > 0) paymentStatus = 'PARTIALLY_PAID'
+
+        const start = startDate ? new Date(startDate) : new Date()
+        const end = new Date(start.getTime() + durationDays * 24 * 60 * 60 * 1000)
+
+        const membership = await Membership.create({
+            user_id: userId,
+            planType,
+            durationDays,
+            startDate: start,
+            endDate: end,
+            totalAmount: parsedTotal,
+            amountPaid: parsedPaid,
+            dueAmount,
+            status: 'ACTIVE',
+            paymentStatus
+        })
+
+        let evaluation = null
+        if (height || weight || idealWeight) {
+            const { bmi: calcBmi, classification } = calculateBmiDetails(Number(weight), Number(height))
+            evaluation = await HealthEvaluation.create({
+                userId,
+                evaluationDate: start,
+                height: height ? Number(height) : undefined,
+                weight: weight ? Number(weight) : undefined,
+                idealWeight: idealWeight ? Number(idealWeight) : undefined,
+                bmi: calcBmi,
+                indicators: { bmi: classification, bodyFat: 'NORMAL', muscle: 'NORMAL' },
+                notes: notes || ''
+            })
+        }
+
+        return res.status(201).json({
+            success: true, statusCode: 201,
+            message: "Plan assigned successfully",
+            data: { membership, healthEvaluation: evaluation }
+        })
+    } catch (error) {
+        console.error("Error setting up member plan:", error)
+        return res.status(500).json({ success: false, statusCode: 500, message: "Internal server error" })
+    }
+}
+
 // @desc Create health evaluation
 // route POST /api/v1/healthEvaluations
 // @access Public/Admin
 export const createHealthEvaluation = async (req, res) => {
     try {
-        const { 
-            userId, 
-            name, 
-            mobile, 
-            weight, 
-            height, 
-            evaluationDate, 
-            idealWeight, 
-            bodyAge, 
-            bodyFat, 
-            musclePercentage, 
-            visceralFat, 
-            bmr, 
-            bmi, 
-            muscle, 
-            notes 
+        const {
+            userId,
+            name,
+            mobile,
+            age,
+            weight,
+            height,
+            evaluationDate,
+            idealWeight,
+            bodyAge,
+            bodyFat,
+            musclePercentage,
+            visceralFat,
+            bmr,
+            bmi,
+            muscle,
+            notes
         } = req.body;
 
         if (!userId || !weight || !height) {
@@ -52,7 +126,7 @@ export const createHealthEvaluation = async (req, res) => {
             return res.status(404).json({ success: false, statusCode: 404, error: "User not found" });
         }
 
-        // Optionally update user name or phone if provided and changed
+        // Optionally update user fields if provided and changed
         let userUpdated = false;
         if (name && name !== user.name) {
             user.name = name;
@@ -60,6 +134,10 @@ export const createHealthEvaluation = async (req, res) => {
         }
         if (mobile && mobile !== user.phone) {
             user.phone = mobile;
+            userUpdated = true;
+        }
+        if (age !== undefined && age !== null && Number(age) !== user.age) {
+            user.age = Number(age);
             userUpdated = true;
         }
         if (userUpdated) {
