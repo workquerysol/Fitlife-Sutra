@@ -183,3 +183,48 @@ export const uploadImage = async (req, res) => {
         return res.status(500).json({ success: false, statusCode: 500, error: error.message })
     }
 }
+
+// @desc    Return a static HTML page with OG meta tags so social crawlers see a preview
+// @route   GET /api/v1/blogs/:id/preview
+// @access  Public
+export const getBlogPreview = async (req, res) => {
+    const esc = (str) => String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    try {
+        const blog = await Blog.findById(req.params.id)
+        if (!blog) return res.status(404).send('<!DOCTYPE html><html><head><title>Not Found</title></head><body>Blog not found</body></html>')
+
+        const redirect = req.query.redirect || ''
+        const title = esc(blog.title)
+        const description = esc(blog.description || blog.title)
+        const image = esc(blog.image || '')
+        const pageUrl = esc(redirect || `https://fitlife-sutra.onrender.com/blogs/${blog._id}`)
+        const safeRedirect = redirect.replace(/'/g, "\\'")
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title}</title>
+  <meta name="description" content="${description}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${image}" />
+  <meta property="og:url" content="${pageUrl}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Fitlifesutra" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${image}" />
+  ${redirect ? `<meta http-equiv="refresh" content="0;url=${esc(redirect)}" />` : ''}
+</head>
+<body>
+  <p style="font-family:sans-serif;padding:24px">Loading article...</p>
+  ${redirect ? `<script>window.location.replace('${safeRedirect}');</script>` : ''}
+</body>
+</html>`)
+    } catch (error) {
+        return res.status(500).send('<!DOCTYPE html><html><head><title>Error</title></head><body>Error loading blog</body></html>')
+    }
+}

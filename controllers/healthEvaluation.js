@@ -38,7 +38,8 @@ export const setupMemberPlan = async (req, res) => {
         // Determine plan duration from plan name
         let durationDays = 30
         const planLower = planType.toLowerCase()
-        if (planLower.includes('5-day') || planLower.includes('5 day')) durationDays = 5
+        if (planLower.includes('2-day') || planLower.includes('2 day')) durationDays = 2
+        else if (planLower.includes('5-day') || planLower.includes('5 day')) durationDays = 5
         else if (planLower.includes('15-day') || planLower.includes('15 day')) durationDays = 15
         else if (planLower.includes('25-day') || planLower.includes('25 day')) durationDays = 25
 
@@ -288,7 +289,9 @@ export const registerMember = async (req, res) => {
         // Determine plan duration in days
         let durationDays = 30; // default
         const planLower = planType.toLowerCase();
-        if (planLower.includes("5-day") || planLower.includes("5 day")) {
+        if (planLower.includes("2-day") || planLower.includes("2 day")) {
+            durationDays = 2;
+        } else if (planLower.includes("5-day") || planLower.includes("5 day")) {
             durationDays = 5;
         } else if (planLower.includes("15-day") || planLower.includes("15 day")) {
             durationDays = 15;

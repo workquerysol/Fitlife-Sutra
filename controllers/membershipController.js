@@ -65,7 +65,8 @@ export const renewMembership = async (req, res) => {
         let durationDays = customDuration || 30
         if (!customDuration) {
             const planLower = planType.toLowerCase()
-            if (planLower.includes("5-day") || planLower.includes("5 day")) durationDays = 5
+            if (planLower.includes("2-day") || planLower.includes("2 day")) durationDays = 2
+            else if (planLower.includes("5-day") || planLower.includes("5 day")) durationDays = 5
             else if (planLower.includes("15-day") || planLower.includes("15 day")) durationDays = 15
             else if (planLower.includes("25-day") || planLower.includes("25 day")) durationDays = 25
         }
