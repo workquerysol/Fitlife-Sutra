@@ -1,4 +1,6 @@
 import { Resend } from "resend"
+import dotenv from "dotenv"
+dotenv.config()
 
 const escapeHtml = (value) =>
   String(value).replace(/[&<>"']/g, (char) => ({
